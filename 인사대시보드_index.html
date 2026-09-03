@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>㈜에스에이치 인사관리</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --ink:#1c1d21;
+    --ink-soft:#5b5e68;
+    --line:#e4e3e0;
+    --paper:#faf9f7;
+    --card:#ffffff;
+    --red:#b3242d;
+    --red-soft:#f6e4e3;
+    --gold:#a9812f;
+    --gold-soft:#f6efdd;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Pretendard","Noto Sans KR",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+    line-height:1.5;
+  }
+  header{
+    padding:22px 20px 18px;
+    border-bottom:2px solid var(--ink);
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  header .brand{display:flex; align-items:baseline; gap:10px;}
+  header .mark{
+    display:inline-block;
+    width:10px;height:10px;
+    background:var(--red);
+    border-radius:2px;
+    transform:translateY(-2px);
+  }
+  header h1{font-size:19px; margin:0; font-weight:800; letter-spacing:-0.02em;}
+  header .sub{font-size:12.5px; color:var(--ink-soft);}
+  header .updated{font-size:11.5px; color:var(--ink-soft);}
+
+  main{max-width:920px; margin:0 auto; padding:18px 16px 60px;}
+
+  .stat-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:22px;
+  }
+  .stat{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 12px;
+    text-align:center;
+  }
+  .stat .num{font-size:26px; font-weight:800; letter-spacing:-0.02em;}
+  .stat .label{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+
+  .section{margin-bottom:26px;}
+  .section-head{
+    display:flex; align-items:center; gap:8px;
+    margin-bottom:10px;
+  }
+  .section-head h2{font-size:14.5px; font-weight:800; margin:0;}
+  .section-head .count-pill{
+    font-size:11px; background:var(--ink); color:#fff;
+    padding:1px 7px; border-radius:20px; font-weight:700;
+  }
+
+  .highlight-box{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .highlight-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    font-size:13.5px;
+  }
+  .highlight-row:last-child{border-bottom:none;}
+  .highlight-row .who{font-weight:700;}
+  .highlight-row .meta{color:var(--ink-soft); font-weight:400; font-size:12.5px; margin-left:6px;}
+  .highlight-row .date{
+    font-weight:800; font-variant-numeric:tabular-nums; font-size:13px;
+    padding:2px 8px; border-radius:6px;
+  }
+  .birthday .date{background:var(--gold-soft); color:var(--gold);}
+  .recontract .date{background:var(--red-soft); color:var(--red);}
+  .empty-row{padding:16px 14px; color:var(--ink-soft); font-size:13px; text-align:center;}
+
+  .toolbar{
+    display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;
+  }
+  .tab-group{display:flex; gap:6px;}
+  .tab-btn{
+    border:1px solid var(--line); background:var(--card); color:var(--ink-soft);
+    padding:7px 13px; border-radius:20px; font-size:12.5px; font-weight:600;
+    cursor:pointer;
+  }
+  .tab-btn.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  select, input[type="text"]{
+    border:1px solid var(--line); border-radius:8px; padding:7px 10px;
+    font-size:12.5px; background:var(--card); color:var(--ink); font-family:inherit;
+  }
+  input[type="text"]{flex:1; min-width:140px;}
+
+  .emp-list{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .emp-row{
+    display:flex; align-items:center; gap:10px;
+    padding:11px 14px; border-bottom:1px solid var(--line);
+    cursor:pointer;
+  }
+  .emp-row:last-child{border-bottom:none;}
+  .emp-row:active{background:var(--paper);}
+  .emp-tag{
+    font-size:10.5px; font-weight:800; padding:2px 6px; border-radius:5px;
+    background:var(--ink); color:#fff; flex-shrink:0;
+  }
+  .emp-tag.energy{background:var(--gold);}
+  .emp-main{flex:1; min-width:0;}
+  .emp-name{font-weight:700; font-size:13.5px;}
+  .emp-detail{font-size:11.5px; color:var(--ink-soft);}
+  .emp-tenure{font-size:11.5px; color:var(--ink-soft); flex-shrink:0; text-align:right;}
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(20,20,20,.55);
+    display:none; align-items:center; justify-content:center; padding:16px; z-index:50;
+  }
+  .modal-backdrop.show{display:flex;}
+  .modal{
+    background:#fff; border-radius:14px; max-width:420px; width:100%;
+    max-height:85vh; overflow-y:auto; padding:20px;
+  }
+  .modal h3{margin:0 0 3px; font-size:16px;}
+  .modal .modal-sub{font-size:12px; color:var(--ink-soft); margin-bottom:14px;}
+  .info-grid{display:grid; grid-template-columns:76px 1fr; gap:7px 10px; font-size:13px;}
+  .info-grid dt{color:var(--ink-soft);}
+  .info-grid dd{margin:0; font-weight:600; word-break:break-all;}
+  .lock-btn{
+    width:100%; margin-top:16px; padding:11px; border:none; border-radius:9px;
+    background:var(--red); color:#fff; font-weight:700; font-size:13.5px; cursor:pointer;
+  }
+  .close-btn{
+    width:100%; margin-top:10px; padding:10px; border:1px solid var(--line);
+    background:#fff; color:var(--ink-soft); border-radius:9px; font-size:13px; cursor:pointer;
+  }
+  .pin-input{
+    width:100%; text-align:center; font-size:24px; letter-spacing:10px;
+    padding:12px; border:1px solid var(--line); border-radius:9px; margin:14px 0 6px;
+    font-family:inherit;
+  }
+  .pin-error{color:var(--red); font-size:12px; text-align:center; min-height:16px;}
+  .sensitive dd{color:var(--red);}
+  .loading, .error-box{
+    text-align:center; padding:60px 20px; color:var(--ink-soft); font-size:13.5px;
+  }
+  .error-box{color:var(--red);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark"></span>
+    <h1>㈜에스에이치 인사관리</h1>
+    <span class="sub">직원현황 대시보드</span>
+  </div>
+  <div class="updated" id="updatedAt"></div>
+</header>
+
+<main>
+  <div id="loadingView" class="loading">직원 데이터를 불러오는 중…</div>
+  <div id="errorView" class="error-box" style="display:none;"></div>
+
+  <div id="appView" style="display:none;">
+
+    <div class="stat-row">
+      <div class="stat"><div class="num" id="statTotal">-</div><div class="label">전체 인원</div></div>
+      <div class="stat"><div class="num" id="statSH">-</div><div class="label">SH</div></div>
+      <div class="stat"><div class="num" id="statEnergy">-</div><div class="label">에너지</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>🎂 이달의 생일자</h2><span class="count-pill" id="bdayCount">0</span></div>
+      <div class="highlight-box birthday" id="bdayList"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>📋 재계약 예정자</h2><span class="count-pill" id="recontractCount">0</span></div>
+      <div class="highlight-box recontract" id="recontractList"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>직원 목록</h2><span class="count-pill" id="listCount">0</span></div>
+
+      <div class="toolbar">
+        <div class="tab-group" id="companyTabs">
+          <button class="tab-btn active" data-company="전체">전체</button>
+          <button class="tab-btn" data-company="SH">SH</button>
+          <button class="tab-btn" data-company="에너지">에너지</button>
+        </div>
+        <select id="deptFilter"><option value="전체">전체 부서</option></select>
+        <input type="text" id="searchBox" placeholder="이름 검색">
+      </div>
+
+      <div class="emp-list" id="empList"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- 상세정보 모달 -->
+<div class="modal-backdrop" id="detailBackdrop">
+  <div class="modal">
+    <h3 id="detailName">-</h3>
+    <div class="modal-sub" id="detailRole">-</div>
+    <dl class="info-grid" id="detailBasic"></dl>
+
+    <dl class="info-grid sensitive" id="detailSensitive" style="display:none; margin-top:10px;"></dl>
+
+    <button class="lock-btn" id="revealBtn">🔒 민감정보 보기 (관리자)</button>
+    <button class="close-btn" id="closeDetailBtn">닫기</button>
+  </div>
+</div>
+
+<!-- PIN 모달 -->
+<div class="modal-backdrop" id="pinBackdrop">
+  <div class="modal" style="max-width:300px;">
+    <h3>관리자 PIN</h3>
+    <div class="modal-sub">민감정보를 보려면 PIN을 입력하세요.</div>
+    <input type="password" inputmode="numeric" maxlength="4" class="pin-input" id="pinInput" placeholder="••••">
+    <div class="pin-error" id="pinError"></div>
+    <button class="lock-btn" id="pinSubmitBtn">확인</button>
+    <button class="close-btn" id="pinCancelBtn">취소</button>
+  </div>
+</div>
+
+<script>
+const SHEET_ID = "1aBYIuGEmbULytUPUxlhUneo6Mb_fw1CeTrzjDrk89AE";
+const GID = "35754082";
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}`;
+const ADMIN_PIN = "6826";
+
+let employees = [];
+let currentCompanyFilter = "전체";
+let currentDept = "전체";
+let currentSelected = null;
+
+function parseDate(str){
+  if(!str) return null;
+  const m = String(str).trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(!m) return null;
+  return {y:parseInt(m[1]), mo:parseInt(m[2]), d:parseInt(m[3])};
+}
+
+function daysUntilNextOccurrence(mo, d){
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  let year = today.getFullYear();
+  let candidate = new Date(year, mo-1, d);
+  if(candidate < today){
+    candidate = new Date(year+1, mo-1, d);
+  }
+  return Math.round((candidate - today) / 86400000);
+}
+
+function loadData(){
+  Papa.parse(CSV_URL, {
+    download:true,
+    header:true,
+    skipEmptyLines:true,
+    complete:function(results){
+      employees = results.data
+        .map(r => ({
+          company: (r["회사구분"]||"").trim(),
+          empNo: (r["사번"]||"").trim(),
+          name: (r["성명"]||"").trim(),
+          dept: (r["근무부서"]||"").trim(),
+          rank: (r["직급"]||"").trim(),
+          title: (r["직함"]||"").trim(),
+          affiliation: (r["소속"]||"").trim(),
+          mainSite: (r["주근무지"]||"").trim(),
+          joinDate: (r["입사일자"]||"").trim(),
+          tenure: (r["근속연수"]||"").trim(),
+          recontract: (r["재계약대상"]||"").trim(),
+          phone: (r["연락처"]||"").trim(),
+          address: (r["주소"]||"").trim(),
+          email: (r["이메일주소"]||"").trim(),
+          bank: (r["은행"]||"").trim(),
+          account: (r["계좌번호"]||"").trim(),
+          ssn: (r["주민번호"]||"").trim(),
+          birth: (r["생년월일"]||"").trim(),
+          qual: (r["자격사항"]||"").trim(),
+          carOwn: (r["소유"]||"").trim(),
+          carNo: (r["차량번호"]||"").trim(),
+          note: (r["비고"]||"").trim(),
+        }))
+        .filter(e => e.name);
+      renderAll();
+      document.getElementById("loadingView").style.display = "none";
+      document.getElementById("appView").style.display = "block";
+      document.getElementById("updatedAt").textContent =
+        "불러온 시각 " + new Date().toLocaleString("ko-KR", {hour:'2-digit', minute:'2-digit'});
+    },
+    error:function(err){
+      document.getElementById("loadingView").style.display = "none";
+      document.getElementById("errorView").style.display = "block";
+      document.getElementById("errorView").textContent =
+        "데이터를 불러오지 못했어요. 구글시트 공유 설정('링크가 있는 모든 사용자 - 뷰어')을 확인해주세요.";
+    }
+  });
+}
+
+function renderAll(){
+  renderStats();
+  renderBirthdays();
+  renderRecontracts();
+  renderDeptFilter();
+  renderList();
+}
+
+function renderStats(){
+  document.getElementById("statTotal").textContent = employees.length;
+  document.getElementById("statSH").textContent = employees.filter(e=>e.company==="SH").length;
+  document.getElementById("statEnergy").textContent = employees.filter(e=>e.company==="에너지").length;
+}
+
+function renderBirthdays(){
+  const thisMonth = new Date().getMonth()+1;
+  const list = employees
+    .map(e => ({e, b: parseDate(e.birth)}))
+    .filter(x => x.b && x.b.mo === thisMonth)
+    .sort((a,b) => a.b.d - b.b.d);
+
+  const box = document.getElementById("bdayList");
+  document.getElementById("bdayCount").textContent = list.length;
+  if(list.length === 0){
+    box.innerHTML = `<div class="empty-row">이번 달 생일자가 없어요.</div>`;
+    return;
+  }
+  box.innerHTML = list.map(x => `
+    <div class="highlight-row">
+      <div><span class="who">${x.e.name}</span><span class="meta">${x.e.dept} ${x.e.rank}</span></div>
+      <div class="date">${x.b.mo}/${x.b.d}</div>
+    </div>
+  `).join("");
+}
+
+function renderRecontracts(){
+  const list = employees
+    .map(e => ({e, j: parseDate(e.joinDate)}))
+    .filter(x => x.e.recontract === "Y" && x.j)
+    .map(x => ({...x, dLeft: daysUntilNextOccurrence(x.j.mo, x.j.d)}))
+    .sort((a,b) => a.dLeft - b.dLeft);
+
+  const box = document.getElementById("recontractList");
+  document.getElementById("recontractCount").textContent = list.length;
+  if(list.length === 0){
+    box.innerHTML = `<div class="empty-row">재계약 예정자가 없어요.</div>`;
+    return;
+  }
+  box.innerHTML = list.map(x => `
+    <div class="highlight-row">
+      <div><span class="who">${x.e.name}</span><span class="meta">${x.e.dept} ${x.e.rank}</span></div>
+      <div class="date">${x.j.mo}/${x.j.d}</div>
+    </div>
+  `).join("");
+}
+
+function renderDeptFilter(){
+  const sel = document.getElementById("deptFilter");
+  const depts = Array.from(new Set(employees.map(e=>e.dept).filter(Boolean))).sort();
+  sel.innerHTML = `<option value="전체">전체 부서</option>` +
+    depts.map(d => `<option value="${d}">${d}</option>`).join("");
+}
+
+function renderList(){
+  const search = document.getElementById("searchBox").value.trim();
+  let list = employees;
+  if(currentCompanyFilter !== "전체") list = list.filter(e => e.company === currentCompanyFilter);
+  if(currentDept !== "전체") list = list.filter(e => e.dept === currentDept);
+  if(search) list = list.filter(e => e.name.includes(search));
+
+  document.getElementById("listCount").textContent = list.length;
+  const box = document.getElementById("empList");
+  if(list.length === 0){
+    box.innerHTML = `<div class="empty-row">조건에 맞는 직원이 없어요.</div>`;
+    return;
+  }
+  box.innerHTML = list.map((e,i) => `
+    <div class="emp-row" data-idx="${employees.indexOf(e)}">
+      <span class="emp-tag ${e.company==='에너지'?'energy':''}">${e.company}</span>
+      <div class="emp-main">
+        <div class="emp-name">${e.name}</div>
+        <div class="emp-detail">${e.dept} · ${e.rank}${e.title && e.title!==e.rank ? ' · '+e.title : ''}</div>
+      </div>
+      <div class="emp-tenure">${e.tenure}</div>
+    </div>
+  `).join("");
+
+  box.querySelectorAll(".emp-row").forEach(row => {
+    row.addEventListener("click", () => openDetail(employees[parseInt(row.dataset.idx)]));
+  });
+}
+
+function openDetail(e){
+  currentSelected = e;
+  document.getElementById("detailName").textContent = e.name;
+  document.getElementById("detailRole").textContent = `${e.company} · ${e.dept} · ${e.rank}${e.title && e.title!==e.rank ? ' ('+e.title+')' : ''}`;
+  document.getElementById("detailBasic").innerHTML = `
+    <dt>입사일</dt><dd>${e.joinDate || '-'}</dd>
+    <dt>근속</dt><dd>${e.tenure || '-'}</dd>
+    <dt>연락처</dt><dd>${e.phone || '-'}</dd>
+    <dt>이메일</dt><dd>${e.email || '-'}</dd>
+    <dt>자격사항</dt><dd>${e.qual || '-'}</dd>
+    <dt>차량</dt><dd>${e.carOwn || ''} ${e.carNo || ''}</dd>
+  `;
+  document.getElementById("detailSensitive").style.display = "none";
+  document.getElementById("detailSensitive").innerHTML = "";
+  document.getElementById("revealBtn").style.display = "block";
+  document.getElementById("detailBackdrop").classList.add("show");
+}
+
+document.getElementById("closeDetailBtn").addEventListener("click", () => {
+  document.getElementById("detailBackdrop").classList.remove("show");
+});
+
+document.getElementById("revealBtn").addEventListener("click", () => {
+  document.getElementById("pinInput").value = "";
+  document.getElementById("pinError").textContent = "";
+  document.getElementById("pinBackdrop").classList.add("show");
+  setTimeout(() => document.getElementById("pinInput").focus(), 50);
+});
+
+document.getElementById("pinCancelBtn").addEventListener("click", () => {
+  document.getElementById("pinBackdrop").classList.remove("show");
+});
+
+document.getElementById("pinSubmitBtn").addEventListener("click", submitPin);
+document.getElementById("pinInput").addEventListener("keydown", (ev) => {
+  if(ev.key === "Enter") submitPin();
+});
+
+function submitPin(){
+  const val = document.getElementById("pinInput").value.trim();
+  if(val === ADMIN_PIN){
+    document.getElementById("pinBackdrop").classList.remove("show");
+    const e = currentSelected;
+    document.getElementById("detailSensitive").style.display = "grid";
+    document.getElementById("detailSensitive").innerHTML = `
+      <dt>주소</dt><dd>${e.address || '-'}</dd>
+      <dt>주민번호</dt><dd>${e.ssn || '-'}</dd>
+      <dt>은행</dt><dd>${e.bank || '-'}</dd>
+      <dt>계좌번호</dt><dd>${e.account || '-'}</dd>
+    `;
+    document.getElementById("revealBtn").style.display = "none";
+  } else {
+    document.getElementById("pinError").textContent = "PIN이 올바르지 않아요.";
+  }
+}
+
+document.getElementById("companyTabs").addEventListener("click", (ev) => {
+  if(!ev.target.matches(".tab-btn")) return;
+  document.querySelectorAll("#companyTabs .tab-btn").forEach(b=>b.classList.remove("active"));
+  ev.target.classList.add("active");
+  currentCompanyFilter = ev.target.dataset.company;
+  renderList();
+});
+
+document.getElementById("deptFilter").addEventListener("change", (ev) => {
+  currentDept = ev.target.value;
+  renderList();
+});
+
+document.getElementById("searchBox").addEventListener("input", renderList);
+
+[document.getElementById("detailBackdrop"), document.getElementById("pinBackdrop")].forEach(bd => {
+  bd.addEventListener("click", (ev) => {
+    if(ev.target === bd) bd.classList.remove("show");
+  });
+});
+
+loadData();
+</script>
+</body>
+</html>
