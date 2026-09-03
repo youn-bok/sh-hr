@@ -190,8 +190,8 @@
 
     <div class="stat-row">
       <div class="stat"><div class="num" id="statTotal">-</div><div class="label">전체 인원</div></div>
-      <div class="stat"><div class="num" id="statSH">-</div><div class="label">SH</div></div>
-      <div class="stat"><div class="num" id="statEnergy">-</div><div class="label">에너지</div></div>
+      <div class="stat"><div class="num" id="statSH">-</div><div class="label">SH-HR</div></div>
+      <div class="stat"><div class="num" id="statEnergy">-</div><div class="label">EN-HR</div></div>
     </div>
 
     <div class="section">
@@ -210,8 +210,8 @@
       <div class="toolbar">
         <div class="tab-group" id="companyTabs">
           <button class="tab-btn active" data-company="전체">전체</button>
-          <button class="tab-btn" data-company="SH">SH</button>
-          <button class="tab-btn" data-company="에너지">에너지</button>
+          <button class="tab-btn" data-company="SH">SH-HR</button>
+          <button class="tab-btn" data-company="에너지">EN-HR</button>
         </div>
         <select id="deptFilter"><option value="전체">전체 부서</option></select>
         <input type="text" id="searchBox" placeholder="이름 검색">
@@ -333,6 +333,9 @@ function renderAll(){
   renderList();
 }
 
+const COMPANY_LABEL = {"SH":"SH-HR", "에너지":"EN-HR"};
+function companyLabel(c){ return COMPANY_LABEL[c] || c; }
+
 function renderStats(){
   document.getElementById("statTotal").textContent = employees.length;
   document.getElementById("statSH").textContent = employees.filter(e=>e.company==="SH").length;
@@ -403,7 +406,7 @@ function renderList(){
   }
   box.innerHTML = list.map((e,i) => `
     <div class="emp-row" data-idx="${employees.indexOf(e)}">
-      <span class="emp-tag ${e.company==='에너지'?'energy':''}">${e.company}</span>
+      <span class="emp-tag ${e.company==='에너지'?'energy':''}">${companyLabel(e.company)}</span>
       <div class="emp-main">
         <div class="emp-name">${e.name}</div>
         <div class="emp-detail">${e.dept} · ${e.rank}${e.title && e.title!==e.rank ? ' · '+e.title : ''}</div>
@@ -420,7 +423,7 @@ function renderList(){
 function openDetail(e){
   currentSelected = e;
   document.getElementById("detailName").textContent = e.name;
-  document.getElementById("detailRole").textContent = `${e.company} · ${e.dept} · ${e.rank}${e.title && e.title!==e.rank ? ' ('+e.title+')' : ''}`;
+  document.getElementById("detailRole").textContent = `${companyLabel(e.company)} · ${e.dept} · ${e.rank}${e.title && e.title!==e.rank ? ' ('+e.title+')' : ''}`;
   document.getElementById("detailBasic").innerHTML = `
     <dt>입사일</dt><dd>${e.joinDate || '-'}</dd>
     <dt>근속</dt><dd>${e.tenure || '-'}</dd>
